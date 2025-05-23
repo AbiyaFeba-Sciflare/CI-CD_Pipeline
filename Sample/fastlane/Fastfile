@@ -1,0 +1,62 @@
+default_platform(:ios)
+
+platform :ios do
+  desc "Run tests"
+  lane :tests do
+    run_tests(
+      scheme: "Sample",
+      devices: ["iPhone 14"],
+      code_coverage: true
+    )
+  end
+
+  desc "Build and run tests"
+  lane :build_and_test do
+    scan(
+      scheme: "Sample",
+      clean: true,
+      code_coverage: true,
+      derived_data_path: "build"
+    )
+    
+    # Add SwiftLint
+    swiftlint(
+      mode: :lint,
+      output_file: "swiftlint.result.json",
+      reporter: "json",
+      ignore_exit_status: true
+    )
+  end
+
+  desc "Build app for release"
+  lane :build do
+    build_app(
+      scheme: "Sample",
+      export_method: "app-store",
+      export_options: {
+        provisioningProfiles: {
+          "com.yourdomain.Sample" => "Sample App Store Profile"
+        }
+      }
+    )
+  end
+
+  desc "Deploy to TestFlight"
+  lane :beta do
+    build
+    upload_to_testflight(
+      skip_waiting_for_build_processing: true
+    )
+  end
+
+  desc "Deploy to App Store"
+  lane :release do
+    build
+    upload_to_app_store(
+      skip_metadata: true,
+      skip_screenshots: true,
+      skip_binary_upload: false,
+      force: true
+    )
+  end
+end
